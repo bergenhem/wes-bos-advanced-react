@@ -1,0 +1,9 @@
+{
+  "languages": {
+    "JavaScript": {
+      "prettier": {
+        "singleQuote": true
+      }
+    }
+  }
+}
