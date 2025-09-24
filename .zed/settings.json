@@ -4,6 +4,11 @@
       "prettier": {
         "singleQuote": true
       }
+    },
+    "TypeScript": {
+      "prettier": {
+        "singleQuote": true
+      }
     }
   }
 }

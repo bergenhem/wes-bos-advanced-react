@@ -15,6 +15,9 @@ const Logo = styled.h1`
         text-transform: uppercase;
         padding: 0.5rem 1rem;
     }
+    a:hover {
+        text-decoration: underline;
+    }
   `;
 
 const HeaderStyles = styled.header`
