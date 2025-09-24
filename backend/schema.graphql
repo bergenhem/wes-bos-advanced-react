@@ -238,12 +238,14 @@ type Product {
   id: ID!
   name: String
   description: String
+  photo: ProductImage
   status: String
   price: Int
 }
 
 input ProductWhereUniqueInput {
   id: ID
+  photo: ProductImageWhereUniqueInput
 }
 
 input ProductWhereInput {
@@ -253,6 +255,7 @@ input ProductWhereInput {
   id: IDFilter
   name: StringFilter
   description: StringFilter
+  photo: ProductImageWhereInput
   status: StringNullableFilter
   price: IntNullableFilter
 }
@@ -293,8 +296,15 @@ input ProductOrderByInput {
 input ProductUpdateInput {
   name: String
   description: String
+  photo: ProductImageRelateToOneForUpdateInput
   status: String
   price: Int
+}
+
+input ProductImageRelateToOneForUpdateInput {
+  create: ProductImageCreateInput
+  connect: ProductImageWhereUniqueInput
+  disconnect: Boolean
 }
 
 input ProductUpdateArgs {
@@ -305,14 +315,21 @@ input ProductUpdateArgs {
 input ProductCreateInput {
   name: String
   description: String
+  photo: ProductImageRelateToOneForCreateInput
   status: String
   price: Int
+}
+
+input ProductImageRelateToOneForCreateInput {
+  create: ProductImageCreateInput
+  connect: ProductImageWhereUniqueInput
 }
 
 type ProductImage {
   id: ID!
   image: CloudinaryImage_File
   altText: String
+  product: Product
 }
 
 type CloudinaryImage_File {
@@ -365,6 +382,7 @@ input CloudinaryImageFormat {
 
 input ProductImageWhereUniqueInput {
   id: ID
+  product: ProductWhereUniqueInput
 }
 
 input ProductImageWhereInput {
@@ -373,6 +391,7 @@ input ProductImageWhereInput {
   NOT: [ProductImageWhereInput!]
   id: IDFilter
   altText: StringFilter
+  product: ProductWhereInput
 }
 
 input ProductImageOrderByInput {
@@ -383,10 +402,17 @@ input ProductImageOrderByInput {
 input ProductImageUpdateInput {
   image: Upload
   altText: String
+  product: ProductRelateToOneForUpdateInput
 }
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
+
+input ProductRelateToOneForUpdateInput {
+  create: ProductCreateInput
+  connect: ProductWhereUniqueInput
+  disconnect: Boolean
+}
 
 input ProductImageUpdateArgs {
   where: ProductImageWhereUniqueInput!
@@ -396,6 +422,12 @@ input ProductImageUpdateArgs {
 input ProductImageCreateInput {
   image: Upload
   altText: String
+  product: ProductRelateToOneForCreateInput
+}
+
+input ProductRelateToOneForCreateInput {
+  create: ProductCreateInput
+  connect: ProductWhereUniqueInput
 }
 
 """

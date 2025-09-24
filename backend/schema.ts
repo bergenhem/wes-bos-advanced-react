@@ -4,7 +4,7 @@
 // This file is where we define the lists, fields and hooks for our data.
 // If you want to learn more about how lists are configured, please read
 // - https://keystonejs.com/docs/config/lists
-
+import 'dotenv/config';
 import { list } from '@keystone-6/core'
 import { allowAll } from '@keystone-6/core/access'
 
@@ -162,6 +162,15 @@ export const lists = {
     fields: {
       name: text({ validation: { isRequired: true } }),
       description: text({ ui: { displayMode: 'textarea' } }),
+      photo: relationship({
+        ref: 'ProductImage.product',
+        ui: {
+          displayMode: 'cards',
+          cardFields: ['image', 'altText'],
+          inlineCreate: { fields: ['image', 'altText'] },
+          inlineEdit: { fields: ['image', 'altText'] },
+        }
+      }),
       status: select({
         options: [
           { label: 'Draft', value: 'DRAFT' },
@@ -180,7 +189,9 @@ export const lists = {
   ProductImage: list({
     access: allowAll,
     ui: {
-      isHidden: false,
+      listView: {
+        initialColumns: ['image', 'altText', 'product'],
+      }
     },
     fields: {
       image: cloudinaryImage({
@@ -192,7 +203,8 @@ export const lists = {
         }
       }),
       altText: text(),
-    }
+      product: relationship({ ref: 'Product.photo' }),
+    },
   }),
 
 } satisfies any
