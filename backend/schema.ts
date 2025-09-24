@@ -16,6 +16,7 @@ import {
   password,
   timestamp,
   select,
+  integer,
 } from '@keystone-6/core/fields'
 
 // the document field is a more complicated field, so it has it's own package
@@ -145,6 +146,29 @@ export const lists = {
       name: text(),
       // this can be helpful to find out all the Posts associated with a Tag
       posts: relationship({ ref: 'Post.tags', many: true }),
+    },
+  }),
+
+  Product: list({
+    access: allowAll,
+    ui: {
+      isHidden: false,
+    },
+    fields: {
+      name: text({ validation: { isRequired: true } }),
+      description: text({ ui: { displayMode: 'textarea' } }),
+      status: select({
+        options: [
+          { label: 'Draft', value: 'DRAFT' },
+          { label: 'Available', value: 'AVAILABLE' },
+          { label: 'Unavailable', value: 'UNAVAILABLE' },
+        ],
+        defaultValue: 'DRAFT',
+        ui: {
+          displayMode: 'segmented-control',
+        }
+      }),
+      price: integer(),
     },
   }),
 } satisfies any
