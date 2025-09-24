@@ -17,7 +17,12 @@ import {
   timestamp,
   select,
   integer,
+  image,
 } from '@keystone-6/core/fields'
+
+import {
+  cloudinaryImage,
+} from '@keystone-6/cloudinary'
 
 // the document field is a more complicated field, so it has it's own package
 import { document } from '@keystone-6/fields-document'
@@ -171,4 +176,23 @@ export const lists = {
       price: integer(),
     },
   }),
+
+  ProductImage: list({
+    access: allowAll,
+    ui: {
+      isHidden: false,
+    },
+    fields: {
+      image: cloudinaryImage({
+        cloudinary: {
+          cloudName: process.env.CLOUDINARY_CLOUD_NAME!, //adding ! to tell TS that this won't be null (I promise ;))
+          apiKey: process.env.CLOUDINARY_KEY!,
+          apiSecret: process.env.CLOUDINARY_SECRET!,
+          folder: process.env.CLOUDINARY_FOLDER!,
+        }
+      }),
+      altText: text(),
+    }
+  }),
+
 } satisfies any
