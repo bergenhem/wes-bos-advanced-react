@@ -56,7 +56,7 @@ export async function insertSeedData(ks: any) {
   //   this is because the GraphQL field type is CloudinaryImageFieldInput which only supports `upload: Upload`
   //   which is a file stream / upload object.
   //   Instead we need to directly access the underlying Prisma client to create our image
-  const database = ks.prisma
+  const database = ks.prisma;
 
   console.log(`🌱 Inserting Seed Data: ${products.length} Products`);
   // For each product we:
@@ -68,9 +68,18 @@ export async function insertSeedData(ks: any) {
     const imageData = await uploadToCloudinary(product.image.url, product.image.id);
 
     console.log(`  🛍️ Adding Product: ${product.name}, with product ID ${product.image.id} and imageDataID ${imageData.id}`);
-    await database.ProductImage.create({
+    await database.Product.create({
       data: {
-        image: imageData.id,
+        name: product.name,
+        description: product.description ?? '',
+        status: product.status ?? 'DRAFT',
+        price: product.price ?? 0,
+        photo: {
+          create: {
+            image: imageData.id,
+            altText: product.description ?? '',
+          }
+        }
       }
     });
   }
