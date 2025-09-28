@@ -22,13 +22,13 @@ async function uploadToCloudinary(url: string, publicId: string) {
   }
   catch (err: any) {
     if (err.error.http_code !== 404) {
-      throw err; //if we have anything other than 404, throw that error?
+      throw err; //if we have anything other than 404, throw that error. 404 means the image does not exist
     }
     const uploadedImage = await cloudinary.uploader.upload(url, {
       public_id: publicId,
       folder: process.env.CLOUDINARY_FOLDER,
       unique_filename: false,
-      overwrite: true //just in case we can force an overwrite
+      overwrite: true //force an overwrite just in case
     });
     return toKeyStoneImage(uploadedImage);
   }
@@ -50,13 +50,20 @@ function toKeyStoneImage(result: any) {
 }
 
 // Old insertSeedData function was written for Keystone v5, and this updated project uses v6
-//   
+//
 export async function insertSeedData(ks: any) {
-  // Because we are seeding and transfering data from Wes' Cloudinary account we need to
-  //   create 
+  // When using CloudinaryImage field type we cannot use Keystone's createOne() method
+  //   this is because the GraphQL field type is CloudinaryImageFieldInput which only supports `upload: Upload`
+  //   which is a file stream / upload object.
+  //   Instead we need to directly access the underlying Prisma client to create our image
   const database = ks.prisma
 
   console.log(`🌱 Inserting Seed Data: ${products.length} Products`);
+  // For each product we:
+  //   1. Check if it is uploaded to Cloudinary already
+  //   2. If not uploaded yet, upload the image to Cloudinary
+  //   3. Transform the response from Cloudinary to the expected Keystone object format
+  //   4. Directly create the ProductImage & Product objects using Prisma instead of Keystone
   for (const product of products) {
     const imageData = await uploadToCloudinary(product.image.url, product.image.id);
 
