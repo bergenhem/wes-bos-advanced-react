@@ -12,6 +12,7 @@ import { lists } from './schema'
 // authentication is configured separately here too, but you might move this elsewhere
 // when you write your list-level access control functions, as they typically rely on session data
 import { withAuth, session } from './auth'
+import { insertSeedData } from './seed-data/index';
 
 export default withAuth(
   config({
@@ -21,6 +22,12 @@ export default withAuth(
       //   see https://keystonejs.com/docs/guides/choosing-a-database#title
       provider: 'sqlite',
       url: 'file:./keystone.db', //TODO: Seed data
+      onConnect: async (keystone) => {
+        console.log('Connected to the database');
+        if (process.argv.includes('--seed-data')) {
+          await insertSeedData(keystone);
+        }
+      },
     },
     server: {
       cors: {
