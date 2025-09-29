@@ -44,8 +44,6 @@ async function uploadToCloudinary(url: string, publicID: string) {
 //   Note: we need the "short" ID in publicID for Keystone's relationship between Product and ProductImage
 //   Possible bug: public_url_transformed seems to be unable to be set, so we cannot see thumbnails in the Keystone admin
 function toKeyStoneImage(result: any, publicID: string) {
-  console.log(`\nKeystone Image Result: ${JSON.stringify(result)}\n`)
-  console.log(`\nURL: ${result.url}\n`);
   return {
     id: result.public_id,
     publicUrl: result.secure_url,
@@ -81,7 +79,6 @@ export async function insertSeedData(ks: any) {
     const imageString = JSON.stringify(imageData);
 
     console.log(`  🛍️ Adding Product: ${product.name}, with product ID ${product.image.id}`);
-    console.log(`ImageString:\n: ${imageString} `);
     await database.Product.create({
       data: {
         name: product.name,
