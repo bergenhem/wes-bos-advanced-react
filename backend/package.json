@@ -4,13 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "keystone dev",
+    "seed-data": "keystone --seed-data",
     "start": "keystone start",
     "build": "keystone build"
   },
   "dependencies": {
-    "@keystone-6/auth": "^8.0.0",
-    "@keystone-6/core": "^6.0.0",
-    "@keystone-6/fields-document": "^9.0.0",
+    "@keystone-6/auth": "^8.1.0",
+    "@keystone-6/cloudinary": "^8.0.0",
+    "@keystone-6/core": "^6.5.1",
+    "@keystone-6/fields-document": "^9.1.1",
+    "cloudinary": "^2.7.0",
     "dotenv": "^17.2.2",
     "typescript": "^5.5.0"
   }

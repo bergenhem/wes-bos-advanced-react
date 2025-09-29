@@ -1,19 +1,98 @@
+import 'dotenv/config';
 import { products } from './data';
+import { v2 as cloudinary } from 'cloudinary';
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_KEY!,
+  api_secret: process.env.CLOUDINARY_SECRET!,
+  folder: process.env.CLOUDINARY_FOLDER!
+});
+
+// We may be seeding a brand new project, or we already have images in our Cloudinary account
+//   Cloudinary does not have an endpoint to check if an image already exists
+//   we will first try to grab the image from Cloudinary, and if it gives a 404
+//   then we upload the image as it does not exist yet
+async function uploadToCloudinary(url: string, publicID: string) {
+  // Cloudinary expects `folder/publicId` while we need to store publicID
+  const folder = process.env.CLOUDINARY_FOLDER;
+  const fullPublicID = `${folder}/${publicID}`;
+
+  try {
+    const existingImage = await cloudinary.api.resource(fullPublicID);
+
+    return toKeyStoneImage(existingImage, publicID);
+  }
+  catch (err: any) {
+    if (err.error.http_code !== 404) {
+      throw err; //if we have anything other than 404, throw that error. 404 means the image does not exist
+    }
+    const uploadedImage = await cloudinary.uploader.upload(url, {
+      public_id: publicID,
+      folder: process.env.CLOUDINARY_FOLDER,
+      resource_type: 'image',
+      use_filename: true,
+      unique_filename: false,
+      overwrite: true //force an overwrite just in case
+    });
+    return toKeyStoneImage(uploadedImage, publicID);
+  }
+}
+
+// Keystone v6 has a new schema that it expects for images.
+//   we need to transform the result we get from Cloudinary to the expected Keystone object format
+//   Note: we need the "short" ID in publicID for Keystone's relationship between Product and ProductImage
+//   Possible bug: public_url_transformed seems to be unable to be set, so we cannot see thumbnails in the Keystone admin
+function toKeyStoneImage(result: any, publicID: string) {
+  return {
+    id: result.public_id,
+    publicUrl: result.secure_url,
+    public_url_transformed: `${result.secure_url}?w=200&h=200&c=fill`,
+    filename: `${result.display_name}.${result.format}`,
+    originalFilename: `${result.display_name}.${result.format}`,
+    mimetype: `image/${result.format}`,
+    encoding: '7bit',
+    filesize: result.bytes,
+    height: result.height,
+    width: result.width,
+    extension: result.format,
+  };
+}
+
+// Old insertSeedData function was written for Keystone v5, and this updated project uses v6
+//
 export async function insertSeedData(ks: any) {
-  // Keystone API changed, so we need to check for both versions to get keystone
-  const keystone = ks.keystone || ks;
-  const adapter = keystone.adapters?.MongooseAdapter || keystone.adapter;
+  // When using CloudinaryImage field type we cannot use Keystone's createOne() method
+  //   this is because the GraphQL field type is CloudinaryImageFieldInput which only supports `upload: Upload`
+  //   which is a file stream / upload object.
+  //   Instead we need to directly access the underlying Prisma client to create our image
+  const database = ks.prisma;
 
   console.log(`🌱 Inserting Seed Data: ${products.length} Products`);
-  const { mongoose } = adapter;
+  // For each product we:
+  //   1. Check if it is uploaded to Cloudinary already
+  //   2. If not uploaded yet, upload the image to Cloudinary
+  //   3. Transform the response from Cloudinary to the expected Keystone object format
+  //   4. Directly create the ProductImage & Product objects using Prisma instead of Keystone
   for (const product of products) {
-    console.log(`  🛍️ Adding Product: ${product.name}`);
-    const { _id } = await mongoose
-    .model('ProductImage')
-    .create({ image: product.photo, altText: product.description });
-    product.photo = _id;
-    await mongoose.model('Product').create(product);
+    const imageData = await uploadToCloudinary(product.image.url, product.image.id);
+    const imageString = JSON.stringify(imageData);
+
+    console.log(`  🛍️ Adding Product: ${product.name}, with product ID ${product.image.id}`);
+    await database.Product.create({
+      data: {
+        name: product.name,
+        description: product.description ?? '',
+        status: product.status ?? 'DRAFT',
+        price: product.price ?? 0,
+        photo: {
+          create: {
+            image: imageString,
+            altText: product.description ?? '',
+          }
+        }
+      }
+    });
   }
   console.log(`✅ Seed Data Inserted: ${products.length} Products`);
   console.log(`👋 Please start the process with \`yarn dev\` or \`npm run dev\``);

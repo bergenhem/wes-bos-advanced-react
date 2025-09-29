@@ -4,7 +4,7 @@
 // This file is where we define the lists, fields and hooks for our data.
 // If you want to learn more about how lists are configured, please read
 // - https://keystonejs.com/docs/config/lists
-
+import 'dotenv/config';
 import { list } from '@keystone-6/core'
 import { allowAll } from '@keystone-6/core/access'
 
@@ -16,7 +16,12 @@ import {
   password,
   timestamp,
   select,
+  integer,
 } from '@keystone-6/core/fields'
+
+import {
+  cloudinaryImage,
+} from '@keystone-6/cloudinary'
 
 // the document field is a more complicated field, so it has it's own package
 import { document } from '@keystone-6/fields-document'
@@ -147,4 +152,58 @@ export const lists = {
       posts: relationship({ ref: 'Post.tags', many: true }),
     },
   }),
+
+  Product: list({
+    access: allowAll,
+    ui: {
+      isHidden: false,
+    },
+    fields: {
+      name: text({ validation: { isRequired: true } }),
+      description: text({ ui: { displayMode: 'textarea' } }),
+      photo: relationship({
+        ref: 'ProductImage.product',
+        ui: {
+          displayMode: 'cards',
+          cardFields: ['image', 'altText'],
+          inlineCreate: { fields: ['image', 'altText'] },
+          inlineEdit: { fields: ['image', 'altText'] },
+        }
+      }),
+      status: select({
+        options: [
+          { label: 'Draft', value: 'DRAFT' },
+          { label: 'Available', value: 'AVAILABLE' },
+          { label: 'Unavailable', value: 'UNAVAILABLE' },
+        ],
+        defaultValue: 'DRAFT',
+        ui: {
+          displayMode: 'segmented-control',
+        }
+      }),
+      price: integer(),
+    },
+  }),
+
+  ProductImage: list({
+    access: allowAll,
+    ui: {
+      listView: {
+        initialColumns: ['image', 'altText', 'product'],
+      }
+    },
+    fields: {
+      image: cloudinaryImage({
+        cloudinary: {
+          cloudName: process.env.CLOUDINARY_CLOUD_NAME!, //adding ! to tell TS that this won't be null (I promise ;))
+          apiKey: process.env.CLOUDINARY_KEY!,
+          apiSecret: process.env.CLOUDINARY_SECRET!,
+          folder: process.env.CLOUDINARY_FOLDER!,
+        }
+      }),
+      altText: text(),
+      product: relationship({ ref: 'Product.photo' }),
+    },
+  }),
+
 } satisfies any
