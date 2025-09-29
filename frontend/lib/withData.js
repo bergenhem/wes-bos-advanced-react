@@ -1,10 +1,10 @@
 import { ApolloClient, ApolloLink, InMemoryCache, gql } from '@apollo/client';
 import { ErrorLink } from '@apollo/client/link/error';
-import { createUploadLink } from 'apollo-upload-client';
+import UploadHttpLink from 'apollo-upload-client/UploadHttpLink.mjs';
 import { endpoint, prodEndpoint } from '../config';
 import { create } from 'react-test-renderer';
 
-function createApolloClient({ headers, initialState }) {
+export function createApolloClient(headers = {}, initialState = {}) {
   const errorLink = new ErrorLink(({ graphQLErrors, networkError }) => {
     if (graphQLErrors) {
       graphQLErrors.forEach(({ message, locations, path }) =>
@@ -16,13 +16,14 @@ function createApolloClient({ headers, initialState }) {
     }
   });
 
-  const httpLink = createUploadLink({
+  const httpLink = new UploadHttpLink({
     uri: process.env.NODE_ENV === 'development' ? endpoint : prodEndpoint,
     credentials: 'include',
     headers,
   });
 
   return new ApolloClient({
+    ssrMode: typeof window === 'undefined',
     link: ApolloLink.from([errorLink, httpLink]),
     cache: new InMemoryCache({
       typePolicies: {
@@ -36,5 +37,3 @@ function createApolloClient({ headers, initialState }) {
     }).restore(initialState || {}),
   });
 }
-
-export default createApolloClient;
