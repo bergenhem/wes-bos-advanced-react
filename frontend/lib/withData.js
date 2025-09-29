@@ -1,35 +1,29 @@
-import { ApolloClient, ApolloLink, InMemoryCache } from '@apollo/client';
-import { onError } from '@apollo/link-error';
-import { getDataFromTree } from '@apollo/client/react/ssr';
+import { ApolloClient, ApolloLink, InMemoryCache, gql } from '@apollo/client';
+import { ErrorLink } from '@apollo/client/link/error';
 import { createUploadLink } from 'apollo-upload-client';
-import withApollo from 'next-with-apollo';
 import { endpoint, prodEndpoint } from '../config';
+import { create } from 'react-test-renderer';
 
-function createClient({ headers, initialState }) {
+function createApolloClient({ headers, initialState }) {
+  const errorLink = new ErrorLink(({ graphQLErrors, networkError }) => {
+    if (graphQLErrors) {
+      graphQLErrors.forEach(({ message, locations, path }) =>
+        console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`)
+      );
+    }
+    if (networkError) {
+      console.log(`[Network error]: ${networkError}. Backend is unreachable. Is it running?`);
+    }
+  });
+
+  const httpLink = createUploadLink({
+    uri: process.env.NODE_ENV === 'development' ? endpoint : prodEndpoint,
+    credentials: 'include',
+    headers,
+  });
+
   return new ApolloClient({
-    link: ApolloLink.from([
-      onError(({ graphQLErrors, networkError }) => {
-        if (graphQLErrors)
-          graphQLErrors.forEach(({ message, locations, path }) =>
-            console.log(
-              `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
-            )
-          );
-        if (networkError)
-          console.log(
-            `[Network error]: ${networkError}. Backend is unreachable. Is it running?`
-          );
-      }),
-      // this uses apollo-link-http under the hood, so all the options here come from that package
-      createUploadLink({
-        uri: process.env.NODE_ENV === 'development' ? endpoint : prodEndpoint,
-        fetchOptions: {
-          credentials: 'include',
-        },
-        // pass the headers along from this request. This enables SSR with logged in state
-        headers,
-      }),
-    ]),
+    link: ApolloLink.from([errorLink, httpLink]),
     cache: new InMemoryCache({
       typePolicies: {
         Query: {
@@ -43,4 +37,4 @@ function createClient({ headers, initialState }) {
   });
 }
 
-export default withApollo(createClient, { getDataFromTree });
+export default createApolloClient;
