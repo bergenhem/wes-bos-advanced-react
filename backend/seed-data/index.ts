@@ -13,40 +13,52 @@ cloudinary.config({
 //   Cloudinary does not have an endpoint to check if an image already exists
 //   we will first try to grab the image from Cloudinary, and if it gives a 404
 //   then we upload the image as it does not exist yet
-async function uploadToCloudinary(url: string, publicId: string) {
+async function uploadToCloudinary(url: string, publicID: string) {
+  // Cloudinary expects `folder/publicId` while we need to store publicID
+  const folder = process.env.CLOUDINARY_FOLDER;
+  const fullPublicID = `${folder}/${publicID}`;
 
   try {
-    const existingImage = await cloudinary.api.resource(publicId);
+    const existingImage = await cloudinary.api.resource(fullPublicID);
 
-    return toKeyStoneImage(existingImage);
+    return toKeyStoneImage(existingImage, publicID);
   }
   catch (err: any) {
     if (err.error.http_code !== 404) {
       throw err; //if we have anything other than 404, throw that error. 404 means the image does not exist
     }
     const uploadedImage = await cloudinary.uploader.upload(url, {
-      public_id: publicId,
+      public_id: publicID,
       folder: process.env.CLOUDINARY_FOLDER,
+      resource_type: 'image',
+      use_filename: true,
       unique_filename: false,
       overwrite: true //force an overwrite just in case
     });
-    return toKeyStoneImage(uploadedImage);
+    return toKeyStoneImage(uploadedImage, publicID);
   }
 }
 
 // Keystone v6 has a new schema that it expects for images.
 //   we need to transform the result we get from Cloudinary to the expected Keystone object format
-function toKeyStoneImage(result: any) {
+//   Note: we need the "short" ID in publicID for Keystone's relationship between Product and ProductImage
+//   Possible bug: public_url_transformed seems to be unable to be set, so we cannot see thumbnails in the Keystone admin
+function toKeyStoneImage(result: any, publicID: string) {
+  console.log(`\nKeystone Image Result: ${JSON.stringify(result)}\n`)
+  console.log(`\nURL: ${result.url}\n`);
   return {
     id: result.public_id,
-    filename: result.display_name + '.' + result.format,
-    originalFilename: result.display_name + '.' + result.format,
+    publicUrl: result.secure_url,
+    public_url_transformed: `${result.secure_url}?w=200&h=200&c=fill`,
+    filename: `${result.display_name}.${result.format}`,
+    originalFilename: `${result.display_name}.${result.format}`,
     mimetype: `image/${result.format}`,
+    encoding: '7bit',
     filesize: result.bytes,
-    width: result.width,
     height: result.height,
-    extension: result.format
-  }
+    width: result.width,
+    extension: result.format,
+  };
 }
 
 // Old insertSeedData function was written for Keystone v5, and this updated project uses v6
@@ -66,8 +78,10 @@ export async function insertSeedData(ks: any) {
   //   4. Directly create the ProductImage & Product objects using Prisma instead of Keystone
   for (const product of products) {
     const imageData = await uploadToCloudinary(product.image.url, product.image.id);
+    const imageString = JSON.stringify(imageData);
 
-    console.log(`  🛍️ Adding Product: ${product.name}, with product ID ${product.image.id} and imageDataID ${imageData.id}`);
+    console.log(`  🛍️ Adding Product: ${product.name}, with product ID ${product.image.id}`);
+    console.log(`ImageString:\n: ${imageString} `);
     await database.Product.create({
       data: {
         name: product.name,
@@ -76,7 +90,7 @@ export async function insertSeedData(ks: any) {
         price: product.price ?? 0,
         photo: {
           create: {
-            image: imageData.id,
+            image: imageString,
             altText: product.description ?? '',
           }
         }

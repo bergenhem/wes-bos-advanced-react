@@ -17,7 +17,6 @@ import {
   timestamp,
   select,
   integer,
-  image,
 } from '@keystone-6/core/fields'
 
 import {
