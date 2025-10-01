@@ -2,6 +2,7 @@ import ItemStyles from "./styles/ItemStyles";
 import TitleStyles from "./styles/Title";
 import Link from 'next/link';
 import PriceTag from './styles/PriceTag';
+import formatMoney from '../lib/formatMoney';
 
 export default function Product({ product }) {
   return (
@@ -10,7 +11,9 @@ export default function Product({ product }) {
       <TitleStyles>
         <Link href={`/product/${product.id}`}>{product.name}</Link>
       </TitleStyles>
-      <PriceTag>{product.price}</PriceTag>
+      <PriceTag>{formatMoney(product.price)}</PriceTag>
+      <p>{product.description}</p>
+      { /* TODO: Add buttons to edit and delete item */}
     </ItemStyles>
   );
 }
