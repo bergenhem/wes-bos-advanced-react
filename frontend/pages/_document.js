@@ -1,5 +1,6 @@
 import Document, { Html, Head, NextScript, Main } from 'next/document';
 import { ServerStyleSheet } from 'styled-components';
+import StyledComponentsRegistry from '../lib/registry';
 
 export default class MyDocument extends Document {
   render() {
@@ -7,8 +8,10 @@ export default class MyDocument extends Document {
       <Html lang="en-US">
         <Head />
         <body>
-          <Main />
-          <NextScript />
+          <StyledComponentsRegistry>
+            <Main />
+            <NextScript />
+          </StyledComponentsRegistry>
         </body>
       </Html>
     )
